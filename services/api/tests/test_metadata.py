@@ -1,6 +1,6 @@
 import fitz
 
-from app.service.metadata import _clean_pdf_metadata_value, extract_metadata
+from app.service.metadata import extract_metadata
 
 
 def _pdf_bytes(metadata: dict[str, str] | None = None) -> bytes:
@@ -34,7 +34,12 @@ def test_extract_pdf_metadata_ignores_corrupt_pdf() -> None:
     assert metadata.pdf_title is None
 
 
-def test_clean_pdf_metadata_value_trims_and_normalizes_empty() -> None:
-    assert _clean_pdf_metadata_value("  Backblaze  ") == "Backblaze"
-    assert _clean_pdf_metadata_value("   ") is None
-    assert _clean_pdf_metadata_value(None) is None
+def test_extract_pdf_metadata_normalizes_values() -> None:
+    metadata = extract_metadata(
+        _pdf_bytes({"author": "  Backblaze  ", "title": "   "}),
+        "guide.pdf",
+        "application/pdf",
+    )
+
+    assert metadata.pdf_author == "Backblaze"
+    assert metadata.pdf_title is None

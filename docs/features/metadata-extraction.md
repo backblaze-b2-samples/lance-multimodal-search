@@ -39,7 +39,6 @@ Extract rich metadata from uploaded files and return it alongside upload results
 - Corrupt image → Pillow metadata extraction logs a warning, image fields remain null
 - Corrupt PDF → `pymupdf` metadata extraction logs a warning, PDF fields remain null
 - Unknown content type → only common fields populated (hashes, size, extension)
-- Audio/video files → `duration_seconds`, `codec`, and `bitrate` response fields exist but remain null
 - EXIF contains binary data → decoded as UTF-8 with replace, converted to string
 - Large file → hashing may be slow (computed in-memory)
 
