@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-25 -->
 # Dev Workflows
 
 Engineering workflows for this repo.
@@ -13,7 +13,7 @@ Engineering workflows for this repo.
 
 - [ ] Read `AGENTS.md` and `ARCHITECTURE.md`
 - [ ] Read the relevant feature doc in `docs/features/`
-- [ ] For non-trivial changes, create a plan in `docs/exec-plans/active/`
+- [ ] For non-trivial changes, create a plan in `docs/exec-plans/`
 - [ ] Implement the smallest coherent change
 - [ ] Add or update tests
 - [ ] Run: `pnpm typecheck && pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`

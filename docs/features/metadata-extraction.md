@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-03-06 -->
+<!-- last_verified: 2026-06-25 -->
 # Feature: Metadata Extraction
 
 ## Purpose
@@ -25,21 +25,21 @@ Extract rich metadata from uploaded files and return it alongside upload results
 - `FileMetadataDetail`: filename, size_bytes, size_human, mime_type, extension, md5, sha256, uploaded_at
 - Image-specific (optional): image_width, image_height, exif dict
 - PDF-specific (optional): pdf_pages, pdf_author, pdf_title
-- Audio/Video (optional): duration_seconds, codec, bitrate
 
 ## Flow
 - Upload route receives file and stores in B2
 - `extract_metadata()` called with file bytes, filename, content type
 - Computes MD5 and SHA-256 hashes
 - If image: opens with Pillow, extracts dimensions and EXIF data
-- If PDF: opens with PyPDF2, extracts page count, author, title
+- If PDF: extracts page count, author, and title from the document metadata
 - Returns `FileMetadataDetail` model
 - Frontend displays metadata in file-metadata-panel component
 
 ## Edge Cases
 - Corrupt image → Pillow fails silently, image fields remain null
-- Corrupt PDF → PyPDF2 fails silently, PDF fields remain null
+- Corrupt PDF → PDF metadata extraction fails silently, PDF fields remain null
 - Unknown content type → only common fields populated (hashes, size, extension)
+- Audio/video files → no duration, codec, or bitrate metadata is extracted
 - EXIF contains binary data → decoded as UTF-8 with replace, converted to string
 - Large file → hashing may be slow (computed in-memory)
 
