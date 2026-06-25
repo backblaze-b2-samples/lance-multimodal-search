@@ -23,6 +23,7 @@ Key backend modules for this app:
 - `app/repo/lance_store.py` — LanceDB vector store on B2 (all `lancedb`/`pyarrow` here)
 - `app/repo/embedder.py` — CLIP adapter (all `sentence-transformers`/`torch` here)
 - `app/service/indexing.py` — corpus → embeddings → Lance rows (PDF page render via `pymupdf`)
+- `app/service/metadata.py` — upload metadata extraction (PDF metadata via `pymupdf`)
 - `app/service/search.py` — query embed → kNN → presigned previews → query log
 
 ## 2. Building on This Starter Kit
@@ -50,7 +51,7 @@ When this repo is used as the foundation for a new app, the following pieces are
 
 - No backward imports across layers
 - No `boto3` outside `repo/`
-- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is a render lib used only in `service/indexing.py`.
+- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is a PDF library used only in `service/indexing.py` and `service/metadata.py`.
 - No business logic in route handlers (`runtime/`)
 - All external APIs wrapped in `repo/` adapters
 - All request/response data validated at boundary (Pydantic models)

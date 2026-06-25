@@ -31,13 +31,13 @@ Extract rich metadata from uploaded files and return it alongside upload results
 - `extract_metadata()` called with file bytes, filename, content type
 - Computes MD5 and SHA-256 hashes
 - If image: opens with Pillow, extracts dimensions and EXIF data
-- If PDF: extracts page count, author, and title from the document metadata
+- If PDF: opens with `pymupdf`/`fitz`, extracts page count, author, and title from the document metadata
 - Returns `FileMetadataDetail` model
 - Frontend displays metadata in file-metadata-panel component
 
 ## Edge Cases
 - Corrupt image → Pillow fails silently, image fields remain null
-- Corrupt PDF → PDF metadata extraction fails silently, PDF fields remain null
+- Corrupt PDF → `pymupdf` metadata extraction fails silently, PDF fields remain null
 - Unknown content type → only common fields populated (hashes, size, extension)
 - Audio/video files → no duration, codec, or bitrate metadata is extracted
 - EXIF contains binary data → decoded as UTF-8 with replace, converted to string
@@ -47,7 +47,7 @@ Extract rich metadata from uploaded files and return it alongside upload results
 - Not applicable (metadata is part of upload response and file preview)
 
 ## Verification
-- Test files: `services/api/tests/` (no dedicated metadata tests yet)
+- Test files: `services/api/tests/test_metadata.py`
 - Required cases: image with EXIF, image without EXIF, PDF with metadata, PDF without metadata, unknown file type, corrupt file handling
 - Quick verify command: `pnpm test:api`
 - Full verify command: `pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`

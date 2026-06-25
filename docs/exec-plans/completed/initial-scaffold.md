@@ -62,7 +62,7 @@ Mechanics:
 - **PDFs** under `corpus/` → each page (capped at `MAX_PAGES_PER_DOC`) rendered to a PNG via
   **`pymupdf`/`fitz`** (ships its own libs — **no poppler/system deps**, unlike `pdf2image`), the page
   PNG stored back to B2 under a `derived/pages/{doc_stem}/{page:04d}.png` prefix, and the page render
-  embedded with CLIP (one Lance row per page). A short extracted-text snippet (via `pymupdf`/PyPDF2)
+  embedded with CLIP (one Lance row per page). A short extracted-text snippet (via `pymupdf`)
   is stored as row metadata for display only — the **vector is always the CLIP image embedding**.
 - A search hit may be a standalone image or a document page; the preview is the image or the page
   thumbnail (presigned), with source filename + page number in the metadata.
@@ -197,6 +197,6 @@ to match, with fake reference values. (Note: starter uses `B2_KEY_ID`/no region;
 - Structural tests still pass: boto3 only in `repo/`, layers intact, files < 300 lines, no backward imports.
 - New deps in `services/api/requirements.txt`: `lancedb~=0.20.0`, `pyarrow>=18.0.0`,
   `sentence-transformers>=3.0.0` (pulls CPU `torch`), `pymupdf>=1.24.0` (PDF page render, bundles its
-  own libs — no system deps). Keep `Pillow` (image handling), `PyPDF2` (text snippet/metadata), `boto3`, base stack.
+  own libs — no system deps). Keep `Pillow` (image handling), `boto3`, base stack.
 - `.env.example`, README quick start, and `config/settings.py` agree on the Standard #3 env names.
 - No real secrets anywhere (placeholders only); `.env` stays gitignored.

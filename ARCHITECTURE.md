@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-25 -->
 # Architecture
 
 `lance-multimodal-search` demonstrates **object-storage-native vector search**: the entire vector store — source assets, embeddings, columnar metadata, and the ANN index — lives on Backblaze B2, with no vector-database server. Embeddings are computed locally on CPU with CLIP (no external API key).
@@ -13,7 +13,7 @@
 - **services/api/** — FastAPI backend (layered architecture)
   - Indexing (corpus → embeddings → Lance rows) and search (query → kNN → presigned previews)
   - B2 S3 integration via boto3; LanceDB vector store on B2
-  - PDF page rendering (pymupdf); CLIP embeddings (sentence-transformers, CPU)
+  - PDF metadata extraction and page rendering (pymupdf); CLIP embeddings (sentence-transformers, CPU)
   - `/health` (B2 **and** LanceDB connectivity), JSON logging, `/metrics`
 - **packages/shared/** — TypeScript types mirroring the Pydantic models
 
@@ -35,7 +35,7 @@ runtime/   FastAPI routes — calls service, never repo directly
 
 1. Dependencies flow downward only: `types` → `config` → `repo` → `service` → `runtime`
 2. No backward imports (e.g. service must not import from runtime)
-3. **External SDKs are contained in `repo/`**: `boto3` (S3 client), `lancedb`/`pyarrow` (vector store), and `sentence-transformers`/`torch` (CLIP) are each confined to a single repo module. The structural test mechanically enforces `boto3`-in-repo; the others follow the same "contain external SDKs" intent. `pymupdf` is a rendering library used only in `service/indexing.py`.
+3. **External SDKs are contained in `repo/`**: `boto3` (S3 client), `lancedb`/`pyarrow` (vector store), and `sentence-transformers`/`torch` (CLIP) are each confined to a single repo module. The structural test mechanically enforces `boto3`-in-repo; the others follow the same "contain external SDKs" intent. `pymupdf` is a PDF library used only in `service/indexing.py` and `service/metadata.py`.
 4. All boundary data uses Pydantic models (no raw dicts across layers)
 5. Each file stays under 300 lines
 
