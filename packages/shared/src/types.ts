@@ -28,10 +28,6 @@ export interface FileMetadataDetail {
   pdf_pages: number | null;
   pdf_author: string | null;
   pdf_title: string | null;
-  // Audio/Video
-  duration_seconds: number | null;
-  codec: string | null;
-  bitrate: number | null;
 }
 
 export interface FileUploadResponse {
