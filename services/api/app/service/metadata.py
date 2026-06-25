@@ -40,18 +40,23 @@ def _extract_image_metadata(file_data: bytes) -> dict:
 
 def _extract_pdf_metadata(file_data: bytes) -> dict:
     try:
-        from PyPDF2 import PdfReader
+        import fitz  # pymupdf
 
-        reader = PdfReader(io.BytesIO(file_data))
-        info = reader.metadata
-        return {
-            "pdf_pages": len(reader.pages),
-            "pdf_author": info.author if info else None,
-            "pdf_title": info.title if info else None,
-        }
+        with fitz.open(stream=file_data, filetype="pdf") as doc:
+            info = doc.metadata or {}
+            return {
+                "pdf_pages": doc.page_count,
+                "pdf_author": _clean_pdf_metadata_value(info.get("author")),
+                "pdf_title": _clean_pdf_metadata_value(info.get("title")),
+            }
     except Exception:
         logger.warning("PDF metadata extraction failed", exc_info=True)
         return {}
+
+
+def _clean_pdf_metadata_value(value: str | None) -> str | None:
+    cleaned = value.strip() if value else ""
+    return cleaned or None
 
 
 def extract_metadata(

@@ -7,13 +7,12 @@ pydantic-settings>=2.7.0
 boto3>=1.35.0
 python-magic>=0.4.27
 Pillow>=11.0.0
-PyPDF2>=3.0.0
 
 # Multimodal vector search (all local, no external API key)
 lancedb~=0.20.0
 pyarrow>=18.0.0
 sentence-transformers>=3.0.0  # CLIP image+text embeddings; pulls CPU torch
-pymupdf>=1.24.0               # PDF page render — bundles its own libs, no system deps
+pymupdf>=1.24.0               # PDF metadata + page render — bundles its own libs, no system deps
 
 # Dev / quality
 ruff>=0.8.0

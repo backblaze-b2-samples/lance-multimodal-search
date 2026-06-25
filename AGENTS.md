@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-05-01 -->
+<!-- last_verified: 2026-06-25 -->
 # AGENTS.md
 
 This is the authoritative control surface for all coding agents. Read this first.
@@ -23,6 +23,7 @@ Key backend modules for this app:
 - `app/repo/lance_store.py` — LanceDB vector store on B2 (all `lancedb`/`pyarrow` here)
 - `app/repo/embedder.py` — CLIP adapter (all `sentence-transformers`/`torch` here)
 - `app/service/indexing.py` — corpus → embeddings → Lance rows (PDF page render via `pymupdf`)
+- `app/service/metadata.py` — upload metadata extraction (PDF metadata via `pymupdf`)
 - `app/service/search.py` — query embed → kNN → presigned previews → query log
 
 ## 2. Building on This Starter Kit
@@ -50,7 +51,7 @@ When this repo is used as the foundation for a new app, the following pieces are
 
 - No backward imports across layers
 - No `boto3` outside `repo/`
-- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is a render lib used only in `service/indexing.py`.
+- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is the PDF library for rendering and metadata extraction in `service/indexing.py` and `service/metadata.py`.
 - No business logic in route handlers (`runtime/`)
 - All external APIs wrapped in `repo/` adapters
 - All request/response data validated at boundary (Pydantic models)
@@ -106,7 +107,7 @@ pnpm test:e2e          # Playwright e2e tests
 
 1. Read this file first.
 2. Review [ARCHITECTURE.md](ARCHITECTURE.md) before structural changes.
-3. For non-trivial changes, create a plan in `docs/exec-plans/active/`.
+3. For non-trivial changes, create a plan in `docs/exec-plans/`.
 4. Implement the smallest coherent change.
 5. Run: `pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`
 6. Update docs in the same PR (see §9).
@@ -128,7 +129,7 @@ See [docs/dev-workflows.md](docs/dev-workflows.md) for full details.
 | Setup or scope changes | `README.md` |
 | Security changes | `docs/SECURITY.md` |
 | Reliability changes | `docs/RELIABILITY.md` |
-| Active work plans | `docs/exec-plans/active/` |
+| Execution plans | `docs/exec-plans/` |
 | Known tech debt | `docs/exec-plans/tech-debt-tracker.md` |
 
 If documentation and implementation conflict, update docs in the same PR. Documentation rot destroys agent reliability.

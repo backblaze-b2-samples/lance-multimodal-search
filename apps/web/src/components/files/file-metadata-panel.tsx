@@ -76,24 +76,6 @@ export function FileMetadataPanel({ metadata }: FileMetadataPanelProps) {
           </>
         )}
 
-        {/* Audio/Video metadata */}
-        {metadata.duration_seconds !== null && (
-          <>
-            <Separator />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Media
-            </p>
-            <MetaRow
-              label="Duration"
-              value={`${metadata.duration_seconds.toFixed(1)}s`}
-            />
-            {metadata.codec && <MetaRow label="Codec" value={metadata.codec} />}
-            {metadata.bitrate && (
-              <MetaRow label="Bitrate" value={`${metadata.bitrate} bps`} />
-            )}
-          </>
-        )}
-
         <Separator />
         <MetaRow
           label="Uploaded"

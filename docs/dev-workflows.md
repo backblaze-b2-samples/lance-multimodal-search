@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-25 -->
 # Dev Workflows
 
 Engineering workflows for this repo.
@@ -13,11 +13,11 @@ Engineering workflows for this repo.
 
 - [ ] Read `AGENTS.md` and `ARCHITECTURE.md`
 - [ ] Read the relevant feature doc in `docs/features/`
-- [ ] For non-trivial changes, create a plan in `docs/exec-plans/active/`
+- [ ] For non-trivial changes, create a plan in `docs/exec-plans/`
 - [ ] Implement the smallest coherent change
 - [ ] Add or update tests
 - [ ] Run: `pnpm typecheck && pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`
-- [ ] Update docs in the same PR (see AGENTS.md §8)
+- [ ] Update docs in the same PR (see the Doc Update Mapping in AGENTS.md)
 - [ ] Move plan to `docs/exec-plans/completed/` after validation
 
 ## Bugfix
@@ -36,7 +36,7 @@ Engineering workflows for this repo.
 
 ## Documentation Update
 
-- [ ] Update only the canonical location (see AGENTS.md §8 doc update mapping)
+- [ ] Update only the canonical location (see the Doc Update Mapping in AGENTS.md)
 - [ ] Never duplicate content — link instead
 - [ ] Update `<!-- last_verified: YYYY-MM-DD -->` header
 
