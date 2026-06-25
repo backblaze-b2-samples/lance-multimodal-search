@@ -51,7 +51,7 @@ When this repo is used as the foundation for a new app, the following pieces are
 
 - No backward imports across layers
 - No `boto3` outside `repo/`
-- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is a PDF library used only in `service/indexing.py` and `service/metadata.py`.
+- **`lancedb`/`pyarrow` only in `repo/lance_store.py`**; **`sentence-transformers`/`torch` only in `repo/embedder.py`** — external SDKs are contained in `repo/` (the structural test mechanically enforces only `boto3`-in-repo; honor the same intent for the rest). `pymupdf` is the PDF library for rendering and metadata extraction in `service/indexing.py` and `service/metadata.py`.
 - No business logic in route handlers (`runtime/`)
 - All external APIs wrapped in `repo/` adapters
 - All request/response data validated at boundary (Pydantic models)

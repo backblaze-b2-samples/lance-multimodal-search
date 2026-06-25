@@ -35,7 +35,7 @@ runtime/   FastAPI routes — calls service, never repo directly
 
 1. Dependencies flow downward only: `types` → `config` → `repo` → `service` → `runtime`
 2. No backward imports (e.g. service must not import from runtime)
-3. **External SDKs are contained in `repo/`**: `boto3` (S3 client), `lancedb`/`pyarrow` (vector store), and `sentence-transformers`/`torch` (CLIP) are each confined to a single repo module. The structural test mechanically enforces `boto3`-in-repo; the others follow the same "contain external SDKs" intent. `pymupdf` is a PDF library used only in `service/indexing.py` and `service/metadata.py`.
+3. **External SDKs are contained in `repo/`**: `boto3` (S3 client), `lancedb`/`pyarrow` (vector store), and `sentence-transformers`/`torch` (CLIP) are each confined to a single repo module. The structural test mechanically enforces `boto3`-in-repo; the others follow the same "contain external SDKs" intent. `pymupdf` is the PDF library for rendering and metadata extraction in `service/indexing.py` and `service/metadata.py`.
 4. All boundary data uses Pydantic models (no raw dicts across layers)
 5. Each file stays under 300 lines
 
