@@ -1,6 +1,6 @@
 import re
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 _B2_REGION_RE = re.compile(r"^[a-z]{2}(?:-[a-z]+)+-\d{3}$")
@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     b2_application_key: str = ""
     b2_bucket_name: str = ""
     b2_public_url_base: str = ""
+    legacy_b2_endpoint: str = Field(default="", validation_alias="B2_ENDPOINT")
+    legacy_b2_public_url: str = Field(
+        default="",
+        validation_alias="B2_PUBLIC_URL",
+    )
 
     api_port: int = 8000
     # Explicit allowlist by default — covers Next on :3000 and the
@@ -54,7 +59,6 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
-        "extra": "ignore",
     }
 
     @field_validator("b2_region")

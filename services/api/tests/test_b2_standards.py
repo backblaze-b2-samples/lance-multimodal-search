@@ -46,11 +46,13 @@ def test_legacy_b2_dotenv_keys_do_not_block_settings(tmp_path):
     legacy_endpoint_key = "B2_" + "ENDPOINT"
     legacy_public_url_key = "B2_" + "PUBLIC_URL"
     env_file = tmp_path / ".env"
+    legacy_endpoint = f"https://s3.{VALID_REGION}.backblazeb2.com"
+    legacy_public_url = "https://legacy.example.com"
     env_file.write_text(
         "\n".join(
             [
-                f"{legacy_endpoint_key}=https://s3.{VALID_REGION}.backblazeb2.com",
-                f"{legacy_public_url_key}=https://legacy.example.com",
+                f"{legacy_endpoint_key}={legacy_endpoint}",
+                f"{legacy_public_url_key}={legacy_public_url}",
                 f"B2_REGION={VALID_REGION}",
                 "B2_APPLICATION_KEY_ID=sample-key-id",
                 "B2_APPLICATION_KEY=sample-key",
@@ -65,6 +67,27 @@ def test_legacy_b2_dotenv_keys_do_not_block_settings(tmp_path):
     assert settings.b2_region == VALID_REGION
     assert settings.b2_endpoint == f"https://s3.{VALID_REGION}.backblazeb2.com"
     assert settings.b2_public_url_base == "https://public.example.com"
+    assert settings.legacy_b2_endpoint == legacy_endpoint
+    assert settings.legacy_b2_public_url == legacy_public_url
+
+
+def test_unknown_dotenv_keys_are_rejected(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"B2_REGION={VALID_REGION}",
+                "B2_APPLICATION_KEY_ID=sample-key-id",
+                "B2_APPLICATION_KEY=sample-key",
+                "B2_BUCKET_NAME=sample-bucket",
+                "B2_PUBLIC_URL_BASE=https://public.example.com",
+                "B2_UNEXPECTED=value",
+            ]
+        )
+    )
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=env_file)
 
 
 def test_boto3_client_uses_standard_user_agent(monkeypatch):

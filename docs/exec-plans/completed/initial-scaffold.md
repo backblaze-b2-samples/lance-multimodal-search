@@ -4,7 +4,7 @@
 > (fresh `vibe-coding-starter-kit` clone). Parent standards: `../CLAUDE.md`.
 > Technical reference for the LanceDB↔B2 mechanism: the sibling
 > `agentic-rag-vector-starter-kit` already proved this exact stack against B2 —
-> we reuse its hard-won B2 quirks (env mapping, unsafe-rename, seed-row create),
+> we reuse its hard-won B2 quirks (storage options, unsafe-rename, seed-row create),
 > but our sample is **fully local / no API key** (CLIP, not OpenAI) and **multimodal**.
 
 ---
