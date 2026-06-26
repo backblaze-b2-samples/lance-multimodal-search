@@ -9,6 +9,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from app.config import settings
+from app.repo.b2_standards import B2_USER_AGENT
 from app.types import FileMetadata
 from app.types.formatting import humanize_bytes
 
@@ -28,9 +29,9 @@ def _split_key(key: str) -> tuple[str, str]:
 
 def _public_url(key: str) -> str | None:
     """Build a public URL for an object key, percent-encoding the path."""
-    if not settings.b2_public_url:
+    if not settings.b2_public_url_base:
         return None
-    return f"{settings.b2_public_url}/{quote(key, safe='/')}"
+    return f"{settings.b2_public_url_base.rstrip('/')}/{quote(key, safe='/')}"
 
 
 @functools.lru_cache(maxsize=1)
@@ -43,7 +44,7 @@ def get_s3_client():
         aws_secret_access_key=settings.b2_application_key,
         config=Config(
             signature_version="s3v4",
-            user_agent_extra="b2ai-lance-multimodal-search",
+            user_agent_extra=B2_USER_AGENT,
         ),
     )
 

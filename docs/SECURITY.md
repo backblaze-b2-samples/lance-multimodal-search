@@ -6,7 +6,7 @@ Security principles and implementation for lance-multimodal-search.
 ## Trust Boundaries
 
 - **Frontend -> API**: CORS-restricted to configured origins, scoped to `GET/POST/DELETE/OPTIONS`
-- **API -> B2**: Authenticated via `B2_APPLICATION_KEY_ID` + `B2_APPLICATION_KEY`, signature v4 (boto3 client). LanceDB's internal S3 client uses the same credentials, mapped into `AWS_*` env vars in `app/repo/lance_store.py`.
+- **API -> B2**: Authenticated via `B2_APPLICATION_KEY_ID` + `B2_APPLICATION_KEY`, signature v4 (boto3 client). LanceDB's internal S3 client uses the same credentials via storage options in `app/repo/lance_store.py`.
 - **Client -> B2**: Short-lived presigned URLs for previews — no public bucket required
 
 ## Upload Validation

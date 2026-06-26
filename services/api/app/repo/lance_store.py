@@ -4,42 +4,25 @@ All ``lancedb`` / ``pyarrow`` SDK usage is confined to this module. The Lance
 table, its data fragments, and the ANN index all live directly on Backblaze B2
 via Lance's internal S3 client — there is no separate vector-database server.
 
-B2 quirks (both proven necessary by the sibling agentic-rag sample):
+B2 quirks:
 
-1. ``AWS_S3_ALLOW_UNSAFE_RENAME=true`` — LanceDB commits on S3 normally use a
-   conditional PUT (``If-None-Match``) that B2 does not support. We map B2
-   credentials into ``AWS_*`` env vars and set this flag. Consequence:
+1. ``aws_s3_allow_unsafe_rename=true`` — LanceDB commits on S3 normally use a
+   conditional PUT (``If-None-Match``) that B2 does not support. Consequence:
    single-writer only. See ``docs/RELIABILITY.md``.
-2. The Rust ``object_store`` backing LanceDB does not expose a user-agent
-   override through LanceDB's public Python API, so Standard #2's custom-UA is
-   satisfied for the boto3 client (``b2_client.py``) but not for Lance's
-   internal client. Justified deviation — documented in ``ARCHITECTURE.md``.
+2. LanceDB storage options include the same sample user agent as the boto3
+   client so every S3-compatible client is identifiable in B2 logs.
 """
 
 import functools
 import logging
-import os
 
 import lancedb
 import pyarrow as pa
 
 from app.config import settings
+from app.repo.b2_standards import B2_USER_AGENT
 
 logger = logging.getLogger(__name__)
-
-# LanceDB reads AWS_* env vars for S3 auth. Map B2 credentials so Lance can
-# connect to B2's S3-compatible API.
-if settings.b2_application_key_id and not os.environ.get("AWS_ACCESS_KEY_ID"):
-    os.environ["AWS_ACCESS_KEY_ID"] = settings.b2_application_key_id
-    os.environ["AWS_SECRET_ACCESS_KEY"] = settings.b2_application_key
-    os.environ["AWS_DEFAULT_REGION"] = settings.b2_region
-    os.environ["AWS_ENDPOINT_URL"] = settings.b2_endpoint
-    os.environ["AWS_S3_ALLOW_UNSAFE_RENAME"] = "true"
-    logger.info(
-        "B2->AWS env mapped for LanceDB: region=%s endpoint=%s",
-        os.environ["AWS_DEFAULT_REGION"],
-        os.environ["AWS_ENDPOINT_URL"],
-    )
 
 ASSETS_TABLE = "corpus_assets"
 EMBEDDING_DIM = settings.embedding_dim  # 512 for clip-ViT-B-32
@@ -62,12 +45,26 @@ ASSETS_SCHEMA = pa.schema(
 )
 
 
+def _lancedb_storage_options() -> dict[str, str]:
+    """Build B2 S3-compatible storage options for LanceDB."""
+    options = {
+        "region": settings.b2_region,
+        "endpoint": settings.b2_endpoint,
+        "user_agent": B2_USER_AGENT,
+        "aws_s3_allow_unsafe_rename": "true",
+    }
+    if settings.b2_application_key_id:
+        options["aws_access_key_id"] = settings.b2_application_key_id
+        options["aws_secret_access_key"] = settings.b2_application_key
+    return {key: value for key, value in options.items() if value}
+
+
 @functools.lru_cache(maxsize=1)
 def get_db():
     """Connect to LanceDB using the configured URI (B2 S3 or local)."""
     uri = settings.lancedb_storage_uri
     logger.info("Connecting to LanceDB at %s", uri)
-    db = lancedb.connect(uri)
+    db = lancedb.connect(uri, storage_options=_lancedb_storage_options())
     logger.info("LanceDB connected, existing tables: %s", db.table_names())
     return db
 
