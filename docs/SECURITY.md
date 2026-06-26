@@ -18,6 +18,18 @@ Security principles and implementation for lance-multimodal-search.
 - Empty file rejection
 - Source assets are written under the `corpus/` prefix; machine-generated PDF page renders go under `derived/pages/`
 
+## Image Embedding Validation
+
+- Upload endpoints enforce the byte limit (100MB default) while streaming the
+  request body
+- `repo/embedder.encode_image()` enforces decoded image limits
+  (`MAX_SEARCH_IMAGE_PIXELS`, `MAX_SEARCH_IMAGE_DIMENSION`) before RGB
+  conversion or CLIP embedding
+- The decoded-size guard is shared by example-image search, corpus image
+  indexing, and rendered PDF page indexing
+- Pillow decompression-bomb warnings/errors are converted into bounded 400
+  responses
+
 ## Preview Model
 
 - Search results, library thumbnails, and file previews are served via **presigned B2 URLs** generated server-side (`generate_presigned_url`), so the bucket can stay private

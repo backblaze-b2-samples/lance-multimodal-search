@@ -9,6 +9,8 @@ import logging
 
 from app.config import settings
 from app.repo import (
+    ImageTooLargeError,
+    InvalidImageError,
     encode_image,
     encode_text,
     get_presigned_url,
@@ -82,7 +84,12 @@ def search_image(
     """Example image -> CLIP image embedding -> ANN over the corpus."""
     if not image_bytes:
         raise SearchError("Empty image")
-    vector = encode_image(image_bytes)
+    try:
+        vector = encode_image(image_bytes)
+    except ImageTooLargeError:
+        raise SearchError("Image dimensions too large") from None
+    except InvalidImageError:
+        raise SearchError("Invalid image upload") from None
     hits = _to_hits(search_vectors(vector, k=top_k or settings.search_top_k))
     top_score = hits[0].score if hits else None
     log_search("image", filename or "(uploaded image)", len(hits), top_score)

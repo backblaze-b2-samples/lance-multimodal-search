@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Feature: Semantic & Multimodal Search
 
 ## Purpose
@@ -41,7 +41,10 @@ Search the corpus by free-text or by example image, returning the most visually/
 ## Edge Cases
 - Empty text query → 400
 - Empty image upload → 400
+- Invalid image bytes → 400
 - Image larger than 100MB → 413
+- Decoded image larger than `MAX_SEARCH_IMAGE_PIXELS` or
+  `MAX_SEARCH_IMAGE_DIMENSION` → 400
 - No table yet / empty index → empty result list (UI shows "no matches / build the index")
 - Presign failure for one hit → that hit returns `preview_url: null` (gallery shows a placeholder)
 
@@ -52,8 +55,8 @@ Search the corpus by free-text or by example image, returning the most visually/
 - Loaded: gallery of scored previews; PDF-page hits show source filename + page number
 
 ## Verification
-- Test files: `services/api/tests/test_search_scoring.py`
-- Required cases: distance→score bounds & clamping; seed-row skipped; hit field mapping & presign
+- Test files: `services/api/tests/test_search_scoring.py`, `services/api/tests/test_error_handling.py`
+- Required cases: distance→score bounds & clamping; seed-row skipped; hit field mapping & presign; invalid image upload returns 400; oversized decoded image returns 400 before model/vector work
 - Quick verify command: `pnpm test:api`
 - Full verify command: `pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`
 - Pass criteria: all pytest tests green, no ruff violations
