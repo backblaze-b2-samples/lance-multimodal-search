@@ -92,8 +92,7 @@ Open `.env` and, from the [Backblaze B2 dashboard](https://secure.backblaze.com/
 
 1. **Create a bucket.** Paste each value into `.env`:
    - **Bucket Unique Name** → `B2_BUCKET_NAME`
-   - **Endpoint** → `B2_ENDPOINT` (e.g. `https://s3.us-west-004.backblazeb2.com`)
-   - The region segment of that endpoint → `B2_REGION` (e.g. `us-west-004`) — LanceDB requires it explicitly.
+   - **Region** → `B2_REGION` (e.g. `us-west-004`) — the app derives the S3-compatible endpoint from this.
 2. **Create an application key** with `Read and Write` permission. Paste:
    - **keyID** → `B2_APPLICATION_KEY_ID`
    - **applicationKey** → `B2_APPLICATION_KEY` *(only shown once)*
@@ -119,7 +118,7 @@ Frontend at `localhost:3000`, API at `localhost:8000`. Then:
 - [Semantic & Multimodal Search](docs/features/semantic-search.md) — text or image query; CLIP shared space; ANN over the B2-resident table
 - [Document Page Indexing](docs/features/document-indexing.md) — PDFs rendered page-by-page, embedded as images, one row per page
 - [Corpus Library](docs/features/corpus-library.md) — scoped explorer of ingested images & PDFs with index status + build action
-- [Object-Storage-Native Vector Store](docs/features/vector-store.md) — the Lance table + ANN index on B2, the AWS_* env mapping, the single-writer caveat, seed-row create
+- [Object-Storage-Native Vector Store](docs/features/vector-store.md) — the Lance table + ANN index on B2, storage options, the single-writer caveat, seed-row create
 - [Corpus Ingest (Upload)](docs/features/file-upload.md) — drag-and-drop images & PDFs into `corpus/`
 - [File Browser](docs/features/file-browser.md) — full-bucket browse / preview / download / delete
 - [Metadata Extraction](docs/features/metadata-extraction.md) — image dimensions, EXIF, PDF info, checksums
@@ -128,12 +127,12 @@ Frontend at `localhost:3000`, API at `localhost:8000`. Then:
 
 ## B2 Surface (S3-compatible API only)
 
-All B2 access uses the **S3-compatible API** — no b2-native API anywhere.
+All B2 access uses the **S3-compatible API** — not the native B2 API.
 
-- **boto3 client** (`services/api/app/repo/b2_client.py`, user agent `b2ai-lance-multimodal-search`, `region_name=B2_REGION`): `put_object`, `list_objects_v2`, `get_object`, `head_object`, `delete_object`, `generate_presigned_url`, `head_bucket`.
-- **LanceDB object_store** (Lance's internal S3 client, `lancedb/` prefix): GET/PUT/LIST/DELETE + multipart for the Lance manifest, data fragments, and ANN index.
+- **boto3 client** (`services/api/app/repo/b2_client.py`, user agent `lance-multimodal-search (backblaze-b2-samples)`, `region_name=B2_REGION`): `put_object`, `list_objects_v2`, `get_object`, `head_object`, `delete_object`, `generate_presigned_url`, `head_bucket`.
+- **LanceDB object_store** (Lance's internal S3 client, `lancedb/` prefix, same user agent via storage options): GET/PUT/LIST/DELETE + multipart for the Lance manifest, data fragments, and ANN index.
 
-Two documented B2 specifics: `AWS_S3_ALLOW_UNSAFE_RENAME=true` (B2 doesn't support the conditional PUT LanceDB uses for commits → single-writer only) and a custom-UA deviation on Lance's internal client (its Rust `object_store` doesn't expose a UA override). Both are explained in [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/RELIABILITY.md](docs/RELIABILITY.md).
+LanceDB also sets `aws_s3_allow_unsafe_rename=true` because B2 doesn't support the conditional PUT LanceDB uses for commits; the consequence is single-writer indexing. See [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/RELIABILITY.md](docs/RELIABILITY.md).
 
 ## Tech Stack
 

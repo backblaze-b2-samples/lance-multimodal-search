@@ -1,11 +1,11 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Reliability
 
 Reliability expectations and practices for this project.
 
 ## LanceDB on B2 — single-writer constraint
 
-- The vector store lives on B2 via LanceDB's S3 backend. LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`), which **B2 does not support**, so `app/repo/lance_store.py` sets `AWS_S3_ALLOW_UNSAFE_RENAME=true`.
+- The vector store lives on B2 via LanceDB's S3 backend. LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`), which **B2 does not support**, so `app/repo/lance_store.py` sets `aws_s3_allow_unsafe_rename=true` in LanceDB storage options.
 - **Consequence: single-writer only.** Concurrent writers to the same Lance table are unsafe and can corrupt it. This sample is a single-user demo, so one indexing run at a time is the assumption. For multi-writer production use, front the table with a single writer process or a queue.
 - **Seed-row create / recovery.** Empty-schema `create_table` calls don't persist on S3 backends, so the table is created **with a seed row** which is then deleted. `ensure_table_ready()` (called at startup) opens the table, counts rows, and **drops + recreates** it if it's broken.
 

@@ -1,14 +1,24 @@
+import re
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+_B2_REGION_RE = re.compile(r"^[a-z]{2}(?:-[a-z]+)+-\d{3}$")
+_B2_REGION_PLACEHOLDER = "your_b2_region"
 
 
 class Settings(BaseSettings):
     # --- Backblaze B2 (Standard #3 env names) ---
-    b2_endpoint: str = "https://s3.us-west-004.backblazeb2.com"
-    b2_region: str = "us-west-004"
+    b2_region: str = ""
     b2_application_key_id: str = ""
     b2_application_key: str = ""
     b2_bucket_name: str = ""
-    b2_public_url: str = ""
+    b2_public_url_base: str = ""
+    legacy_b2_endpoint: str = Field(default="", validation_alias="B2_ENDPOINT")
+    legacy_b2_public_url: str = Field(
+        default="",
+        validation_alias="B2_PUBLIC_URL",
+    )
 
     api_port: int = 8000
     # Explicit allowlist by default — covers Next on :3000 and the
@@ -46,11 +56,37 @@ class Settings(BaseSettings):
     # Durable query log for the dashboard recent-searches table.
     query_log_file: str = "data/search_log.json"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "forbid",
+    }
+
+    @field_validator("b2_region")
+    @classmethod
+    def validate_b2_region(cls, value: str) -> str:
+        if not value:
+            return value
+        if value == _B2_REGION_PLACEHOLDER:
+            return value
+        if not _B2_REGION_RE.fullmatch(value):
+            raise ValueError(
+                "B2_REGION must be a Backblaze region like us-west-004"
+            )
+        return value
 
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.api_cors_origins.split(",")]
+
+    @property
+    def b2_endpoint(self) -> str:
+        """Derive the B2 S3-compatible endpoint from B2_REGION."""
+        if not self.b2_region:
+            return ""
+        if self.b2_region == _B2_REGION_PLACEHOLDER:
+            return ""
+        return f"https://s3.{self.b2_region}.backblazeb2.com"
 
     @property
     def lancedb_storage_uri(self) -> str:
