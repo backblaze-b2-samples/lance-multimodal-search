@@ -1,5 +1,7 @@
 """Tests for error handling across the API."""
 
+from io import BytesIO
+
 import pytest
 
 from app.service import files as files_service
@@ -71,7 +73,6 @@ def test_traversal_keys_are_rejected():
 @pytest.mark.asyncio
 async def test_upload_empty_file_returns_400(client):
     """Uploading an empty file returns 400 with explanation."""
-    from io import BytesIO
 
     response = await client.post(
         "/upload",
@@ -79,3 +80,15 @@ async def test_upload_empty_file_returns_400(client):
     )
     assert response.status_code == 400
     assert "empty" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_image_search_invalid_image_returns_400(client):
+    """Invalid example-image bytes are rejected instead of surfacing a 500."""
+    response = await client.post(
+        "/search/image",
+        files={"file": ("bad.png", BytesIO(b"not an image"), "image/png")},
+    )
+
+    assert response.status_code == 400
+    assert "invalid image" in response.json()["detail"].lower()

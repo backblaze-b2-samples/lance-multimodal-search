@@ -41,6 +41,7 @@ Search the corpus by free-text or by example image, returning the most visually/
 ## Edge Cases
 - Empty text query → 400
 - Empty image upload → 400
+- Invalid image bytes → 400
 - Image larger than 100MB → 413
 - No table yet / empty index → empty result list (UI shows "no matches / build the index")
 - Presign failure for one hit → that hit returns `preview_url: null` (gallery shows a placeholder)
@@ -52,8 +53,8 @@ Search the corpus by free-text or by example image, returning the most visually/
 - Loaded: gallery of scored previews; PDF-page hits show source filename + page number
 
 ## Verification
-- Test files: `services/api/tests/test_search_scoring.py`
-- Required cases: distance→score bounds & clamping; seed-row skipped; hit field mapping & presign
+- Test files: `services/api/tests/test_search_scoring.py`, `services/api/tests/test_error_handling.py`
+- Required cases: distance→score bounds & clamping; seed-row skipped; hit field mapping & presign; invalid image upload returns 400
 - Quick verify command: `pnpm test:api`
 - Full verify command: `pnpm lint && pnpm lint:api && pnpm test:api && pnpm check:structure`
 - Pass criteria: all pytest tests green, no ruff violations

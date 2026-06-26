@@ -19,6 +19,10 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+class InvalidImageError(Exception):
+    """Raised when uploaded bytes cannot be decoded as an image."""
+
+
 @functools.lru_cache(maxsize=1)
 def _get_model():
     """Lazily load the CLIP model once (heavy import + first-run download)."""
@@ -34,7 +38,11 @@ def encode_image(image_bytes: bytes) -> list[float]:
     """Embed raw image bytes into the shared CLIP space."""
     from PIL import Image
 
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    except (Image.DecompressionBombError, OSError, ValueError) as e:
+        raise InvalidImageError("Invalid image data") from e
+
     vector = _get_model().encode(image, convert_to_numpy=True, normalize_embeddings=True)
     return vector.astype("float32").tolist()
 
