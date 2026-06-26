@@ -7,7 +7,7 @@ import pytest
 from app.service import files as files_service
 
 
-def _png_bytes(width: int, height: int) -> BytesIO:
+def _png_file(width: int, height: int) -> BytesIO:
     from PIL import Image
 
     data = BytesIO()
@@ -113,7 +113,7 @@ async def test_image_search_oversized_decoded_image_returns_400(
     from app.repo import embedder
     from app.service import search as search_service
 
-    image_data = _png_bytes(33, 33)
+    image_data = _png_file(33, 33)
 
     def fail_rgb_conversion(*_args, **_kwargs):
         raise AssertionError("RGB conversion should not run")
@@ -148,7 +148,7 @@ async def test_image_search_decompression_warning_returns_400(
     from app.repo import embedder
     from app.service import search as search_service
 
-    image_data = _png_bytes(11, 10)
+    image_data = _png_file(11, 10)
 
     def fail_rgb_conversion(*_args, **_kwargs):
         raise AssertionError("RGB conversion should not run")
