@@ -1,6 +1,5 @@
 """Tests for error handling across the API."""
 
-import warnings
 from io import BytesIO
 
 import pytest
@@ -166,12 +165,10 @@ async def test_image_search_decompression_warning_returns_413(
     monkeypatch.setattr(embedder, "_get_model", fail_model_load)
     monkeypatch.setattr(search_service, "search_vectors", fail_vector_search)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", Image.DecompressionBombWarning)
-        response = await client.post(
-            "/search/image",
-            files={"file": ("warning.png", image_data, "image/png")},
-        )
+    response = await client.post(
+        "/search/image",
+        files={"file": ("warning.png", image_data, "image/png")},
+    )
 
     assert response.status_code == 413
     assert "dimensions" in response.json()["detail"].lower()
