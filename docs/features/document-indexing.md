@@ -36,6 +36,7 @@ Make PDFs searchable in the same multimodal space as images by rendering each pa
 ## Edge Cases
 - PDF with more pages than `MAX_PAGES_PER_DOC` → only the first N pages are indexed
 - Encrypted/corrupt PDF → the asset's error is collected in `IndexResult.errors`; indexing continues for other assets
+- Rendered page exceeds `MAX_SEARCH_IMAGE_PIXELS` or `MAX_SEARCH_IMAGE_DIMENSION` → the asset's error is collected in `IndexResult.errors`; indexing continues for other assets
 - Scanned PDF with no extractable text → `text_snippet` is empty; the **vector is still the page image embedding**, so the page remains searchable
 
 ## UX States
