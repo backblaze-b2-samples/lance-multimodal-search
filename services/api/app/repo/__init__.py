@@ -9,7 +9,13 @@ from app.repo.b2_client import (
     list_files,
     upload_file,
 )
-from app.repo.embedder import InvalidImageError, check_model_ready, encode_image, encode_text
+from app.repo.embedder import (
+    ImageTooLargeError,
+    InvalidImageError,
+    check_model_ready,
+    encode_image,
+    encode_text,
+)
 from app.repo.lance_store import (
     add_rows,
     check_lancedb_connectivity,
@@ -21,6 +27,7 @@ from app.repo.lance_store import (
 from app.repo.search_log import get_recent_searches, log_search
 
 __all__ = [
+    "ImageTooLargeError",
     "InvalidImageError",
     "add_rows",
     "check_connectivity",

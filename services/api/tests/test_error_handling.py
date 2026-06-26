@@ -1,10 +1,20 @@
 """Tests for error handling across the API."""
 
+import warnings
 from io import BytesIO
 
 import pytest
 
 from app.service import files as files_service
+
+
+def _png_bytes(width: int, height: int) -> BytesIO:
+    from PIL import Image
+
+    data = BytesIO()
+    Image.new("RGB", (width, height), color=(0, 0, 0)).save(data, format="PNG")
+    data.seek(0)
+    return data
 
 
 @pytest.mark.asyncio
@@ -92,3 +102,76 @@ async def test_image_search_invalid_image_returns_400(client):
 
     assert response.status_code == 400
     assert "invalid image" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_image_search_oversized_decoded_image_returns_413(
+    client, monkeypatch
+):
+    """Decoded image limits reject compressed inputs before model or vector work."""
+    from PIL import Image
+
+    from app.repo import embedder
+    from app.service import search as search_service
+
+    image_data = _png_bytes(33, 33)
+
+    def fail_rgb_conversion(*_args, **_kwargs):
+        raise AssertionError("RGB conversion should not run")
+
+    def fail_model_load():
+        raise AssertionError("CLIP model should not load")
+
+    def fail_vector_search(*_args, **_kwargs):
+        raise AssertionError("vector search should not run")
+
+    monkeypatch.setattr(embedder.settings, "max_search_image_pixels", 1_024)
+    monkeypatch.setattr(Image.Image, "convert", fail_rgb_conversion)
+    monkeypatch.setattr(embedder, "_get_model", fail_model_load)
+    monkeypatch.setattr(search_service, "search_vectors", fail_vector_search)
+
+    response = await client.post(
+        "/search/image",
+        files={"file": ("large.png", image_data, "image/png")},
+    )
+
+    assert response.status_code == 413
+    assert "dimensions" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_image_search_decompression_warning_returns_413(
+    client, monkeypatch
+):
+    """Pillow decompression warnings promoted to errors return bounded 413s."""
+    from PIL import Image
+
+    from app.repo import embedder
+    from app.service import search as search_service
+
+    image_data = _png_bytes(11, 10)
+
+    def fail_rgb_conversion(*_args, **_kwargs):
+        raise AssertionError("RGB conversion should not run")
+
+    def fail_model_load():
+        raise AssertionError("CLIP model should not load")
+
+    def fail_vector_search(*_args, **_kwargs):
+        raise AssertionError("vector search should not run")
+
+    monkeypatch.setattr(embedder.settings, "max_search_image_pixels", 10_000)
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 100)
+    monkeypatch.setattr(Image.Image, "convert", fail_rgb_conversion)
+    monkeypatch.setattr(embedder, "_get_model", fail_model_load)
+    monkeypatch.setattr(search_service, "search_vectors", fail_vector_search)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        response = await client.post(
+            "/search/image",
+            files={"file": ("warning.png", image_data, "image/png")},
+        )
+
+    assert response.status_code == 413
+    assert "dimensions" in response.json()["detail"].lower()

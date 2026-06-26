@@ -9,6 +9,7 @@ import logging
 
 from app.config import settings
 from app.repo import (
+    ImageTooLargeError,
     InvalidImageError,
     encode_image,
     encode_text,
@@ -85,6 +86,8 @@ def search_image(
         raise SearchError("Empty image")
     try:
         vector = encode_image(image_bytes)
+    except ImageTooLargeError:
+        raise SearchError("Image dimensions too large", status_code=413) from None
     except InvalidImageError:
         raise SearchError("Invalid image upload") from None
     hits = _to_hits(search_vectors(vector, k=top_k or settings.search_top_k))

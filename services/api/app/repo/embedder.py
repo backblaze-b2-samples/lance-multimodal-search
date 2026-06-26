@@ -13,6 +13,7 @@ external API key. The first call downloads the model weights from HuggingFace
 import functools
 import io
 import logging
+import warnings
 
 from app.config import settings
 
@@ -21,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 class InvalidImageError(Exception):
     """Raised when uploaded bytes cannot be decoded as an image."""
+
+
+class ImageTooLargeError(InvalidImageError):
+    """Raised when decoded image dimensions exceed the configured limit."""
 
 
 @functools.lru_cache(maxsize=1)
@@ -34,16 +39,36 @@ def _get_model():
     return model
 
 
+def _validate_image_dimensions(width: int, height: int) -> None:
+    pixels = width * height
+    max_dimension = settings.max_search_image_dimension
+    max_pixels = settings.max_search_image_pixels
+    if width <= 0 or height <= 0:
+        raise InvalidImageError("Invalid image dimensions")
+    if width > max_dimension or height > max_dimension or pixels > max_pixels:
+        raise ImageTooLargeError("Image dimensions too large")
+
+
 def encode_image(image_bytes: bytes) -> list[float]:
     """Embed raw image bytes into the shared CLIP space."""
     from PIL import Image
 
     try:
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    except (Image.DecompressionBombError, OSError, ValueError) as e:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(image_bytes)) as image:
+                _validate_image_dimensions(image.width, image.height)
+                rgb_image = image.convert("RGB")
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as e:
+        raise ImageTooLargeError("Image dimensions too large") from e
+    except ImageTooLargeError:
+        raise
+    except (OSError, ValueError) as e:
         raise InvalidImageError("Invalid image data") from e
 
-    vector = _get_model().encode(image, convert_to_numpy=True, normalize_embeddings=True)
+    vector = _get_model().encode(
+        rgb_image, convert_to_numpy=True, normalize_embeddings=True
+    )
     return vector.astype("float32").tolist()
 
 

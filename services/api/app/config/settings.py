@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     pdf_render_dpi: int = 120
     # Search.
     search_top_k: int = 24
+    max_search_image_pixels: int = 16_777_216  # 4096 x 4096 decoded pixels
+    max_search_image_dimension: int = 8192
     # Durable query log for the dashboard recent-searches table.
     query_log_file: str = "data/search_log.json"
 

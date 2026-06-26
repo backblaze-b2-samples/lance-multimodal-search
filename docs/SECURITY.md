@@ -18,6 +18,14 @@ Security principles and implementation for lance-multimodal-search.
 - Empty file rejection
 - Source assets are written under the `corpus/` prefix; machine-generated PDF page renders go under `derived/pages/`
 
+## Search Input Validation
+
+- Example-image search enforces both the upload byte limit and decoded image
+  limits (`MAX_SEARCH_IMAGE_PIXELS`, `MAX_SEARCH_IMAGE_DIMENSION`) before RGB
+  conversion or CLIP embedding
+- Pillow decompression-bomb warnings/errors are converted into bounded 413
+  responses
+
 ## Preview Model
 
 - Search results, library thumbnails, and file previews are served via **presigned B2 URLs** generated server-side (`generate_presigned_url`), so the bucket can stay private
