@@ -4,6 +4,7 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 _B2_REGION_RE = re.compile(r"^[a-z]{2}(?:-[a-z]+)+-\d{3}$")
+_B2_REGION_PLACEHOLDER = "your_b2_region"
 
 
 class Settings(BaseSettings):
@@ -61,6 +62,8 @@ class Settings(BaseSettings):
     def validate_b2_region(cls, value: str) -> str:
         if not value:
             return value
+        if value == _B2_REGION_PLACEHOLDER:
+            return value
         if not _B2_REGION_RE.fullmatch(value):
             raise ValueError(
                 "B2_REGION must be a Backblaze region like us-west-004"
@@ -75,6 +78,8 @@ class Settings(BaseSettings):
     def b2_endpoint(self) -> str:
         """Derive the B2 S3-compatible endpoint from B2_REGION."""
         if not self.b2_region:
+            return ""
+        if self.b2_region == _B2_REGION_PLACEHOLDER:
             return ""
         return f"https://s3.{self.b2_region}.backblazeb2.com"
 

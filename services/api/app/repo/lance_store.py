@@ -53,7 +53,7 @@ def _lancedb_storage_options() -> dict[str, str]:
         "user_agent": B2_USER_AGENT,
         "aws_s3_allow_unsafe_rename": "true",
     }
-    if settings.b2_application_key_id:
+    if settings.b2_application_key_id and settings.b2_application_key:
         options["aws_access_key_id"] = settings.b2_application_key_id
         options["aws_secret_access_key"] = settings.b2_application_key
     return {key: value for key, value in options.items() if value}
@@ -64,7 +64,10 @@ def get_db():
     """Connect to LanceDB using the configured URI (B2 S3 or local)."""
     uri = settings.lancedb_storage_uri
     logger.info("Connecting to LanceDB at %s", uri)
-    db = lancedb.connect(uri, storage_options=_lancedb_storage_options())
+    if uri.startswith("s3://"):
+        db = lancedb.connect(uri, storage_options=_lancedb_storage_options())
+    else:
+        db = lancedb.connect(uri)
     logger.info("LanceDB connected, existing tables: %s", db.table_names())
     return db
 

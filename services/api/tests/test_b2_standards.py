@@ -16,6 +16,12 @@ def test_endpoint_is_derived_from_region():
     assert settings.b2_endpoint == f"https://s3.{VALID_REGION}.backblazeb2.com"
 
 
+def test_region_placeholder_is_allowed_for_startup_validation():
+    settings = Settings(_env_file=None, b2_region="your_b2_region")
+
+    assert settings.b2_endpoint == ""
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -127,3 +133,66 @@ def test_lancedb_storage_options_use_b2_standard_names(monkeypatch):
         "aws_access_key_id": "sample-key-id",
         "aws_secret_access_key": "sample-key",
     }
+
+
+def test_lancedb_omits_incomplete_credential_pair(monkeypatch):
+    captured = {}
+
+    class FakeDb:
+        def table_names(self):
+            return []
+
+    def fake_connect(uri, *, storage_options):
+        captured["storage_options"] = storage_options
+        return FakeDb()
+
+    monkeypatch.setattr(lance_store.settings, "b2_region", VALID_REGION)
+    monkeypatch.setattr(lance_store.settings, "b2_bucket_name", "sample-bucket")
+    monkeypatch.setattr(
+        lance_store.settings,
+        "b2_application_key_id",
+        "sample-key-id",
+    )
+    monkeypatch.setattr(lance_store.settings, "b2_application_key", "")
+    monkeypatch.setattr(lance_store.lancedb, "connect", fake_connect)
+    lance_store.get_db.cache_clear()
+
+    try:
+        lance_store.get_db()
+    finally:
+        lance_store.get_db.cache_clear()
+
+    assert "aws_access_key_id" not in captured["storage_options"]
+    assert "aws_secret_access_key" not in captured["storage_options"]
+
+
+def test_lancedb_local_uri_omits_storage_options(monkeypatch, tmp_path):
+    captured = {}
+
+    class FakeDb:
+        def table_names(self):
+            return []
+
+    def fake_connect(uri, **kwargs):
+        captured["uri"] = uri
+        captured["kwargs"] = kwargs
+        return FakeDb()
+
+    monkeypatch.setattr(lance_store.settings, "lancedb_uri", str(tmp_path))
+    monkeypatch.setattr(lance_store.settings, "b2_region", VALID_REGION)
+    monkeypatch.setattr(
+        lance_store.settings,
+        "b2_application_key_id",
+        "sample-key-id",
+    )
+    monkeypatch.setattr(lance_store.settings, "b2_application_key", "sample-key")
+    monkeypatch.setattr(lance_store.lancedb, "connect", fake_connect)
+    lance_store.get_db.cache_clear()
+
+    try:
+        lance_store.get_db()
+    finally:
+        lance_store.get_db.cache_clear()
+
+    assert captured["uri"] == str(tmp_path)
+    assert captured["kwargs"] == {}
