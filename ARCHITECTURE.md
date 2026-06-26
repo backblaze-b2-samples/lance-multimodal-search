@@ -48,7 +48,7 @@ services/api/
     types/                  Pydantic models (files, upload, stats, search, index)
     config/                 Settings (B2 creds, LanceDB URI, CLIP model, prefixes, PDF/search knobs)
     repo/
-      b2_client.py          boto3 S3 client (UA b2ai-lance-multimodal-search, region_name=B2_REGION)
+      b2_client.py          boto3 S3 client (UA lance-multimodal-search (backblaze-b2-samples), region_name=B2_REGION)
       lance_store.py        LanceDB vector store on B2 — all lancedb/pyarrow confined here
       embedder.py           CLIP adapter — all sentence-transformers/torch confined here
       search_log.py         Durable recent-searches JSON log (dashboard table)
@@ -68,12 +68,13 @@ services/api/
   - `lancedb/` — the Lance table, data fragments, and ANN index
 - **LanceDB on B2** — the vector store. Connected at `s3://{B2_BUCKET_NAME}/lancedb/`. Lance's internal Rust `object_store` client performs all GET/PUT/LIST/DELETE + multipart against B2's S3 API. There is **no separate database server**.
 
-### The B2 ↔ LanceDB mechanism (two flagged specifics)
+### The B2 ↔ LanceDB mechanism
 
 `app/repo/lance_store.py` contains all the B2-specific wiring:
 
-1. **AWS_* env mapping + `AWS_S3_ALLOW_UNSAFE_RENAME=true`.** LanceDB reads `AWS_*` env vars for S3 auth, so B2 credentials are mapped into `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` / `AWS_ENDPOINT_URL` at import time. LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`) that **B2 does not support**; the unsafe-rename flag bypasses it. **Consequence: single-writer only** — concurrent writers to the same table are unsafe. Fine for a single-user demo; see [docs/RELIABILITY.md](docs/RELIABILITY.md).
-2. **Custom-UA deviation on Lance's internal client.** Standard #2 (custom user agent on every S3 client) is satisfied for the **boto3** client (`b2ai-lance-multimodal-search`). It is **not** satisfiable for Lance's internal client: the Rust `object_store` backing LanceDB does not expose a user-agent override through LanceDB's public Python API. This is a **justified, documented deviation**.
+1. **B2 storage options.** LanceDB receives B2 credentials, region, derived endpoint, and the sample user agent through `storage_options`, not through extra public env aliases.
+2. **`aws_s3_allow_unsafe_rename=true`.** LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`) that **B2 does not support**; the unsafe-rename option bypasses it. **Consequence: single-writer only** — concurrent writers to the same table are unsafe. Fine for a single-user demo; see [docs/RELIABILITY.md](docs/RELIABILITY.md).
+3. **Custom user agents.** The boto3 client and LanceDB object-store client both use `lance-multimodal-search (backblaze-b2-samples)` so B2 request logs identify this sample.
 
 **Seed-row create.** Empty-schema `create_table` calls don't persist reliably on S3 backends, so `lance_store.py` creates the table *with* a seed row, then deletes the row (and includes open→`count_rows`→drop-if-broken recovery). See `ensure_table_ready()`.
 

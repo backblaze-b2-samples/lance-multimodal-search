@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Feature: Object-Storage-Native Vector Store
 
 ## Purpose
@@ -18,7 +18,7 @@ Run a complete vector store — the Lance table, data fragments, and ANN index �
 - Vector store + B2 quirks: `services/api/app/repo/lance_store.py`
 
 ## Inputs
-- B2 credentials (mapped into `AWS_*` env vars at import time)
+- B2 credentials and region, passed to LanceDB as storage options
 - `LANCEDB_URI` (optional override; defaults to the B2 bucket path)
 
 ## Outputs
@@ -26,10 +26,10 @@ Run a complete vector store — the Lance table, data fragments, and ANN index �
 - Schema: `asset_id, source_key, source_filename, content_type, kind, preview_key, page_number, text_snippet, indexed_at, vector(list<float32>[512])`
 
 ## Flow & B2 specifics
-- **AWS_* env mapping.** LanceDB reads `AWS_*` env vars for S3 auth, so `lance_store.py` maps `B2_APPLICATION_KEY_ID/KEY/REGION/ENDPOINT` into `AWS_ACCESS_KEY_ID/SECRET/DEFAULT_REGION/ENDPOINT_URL` at import time.
-- **`AWS_S3_ALLOW_UNSAFE_RENAME=true`.** LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`) that **B2 does not support**. This flag bypasses it. **Consequence: single-writer only** (see [RELIABILITY.md](../RELIABILITY.md)).
+- **B2 storage options.** `lance_store.py` passes the B2 credentials, region, derived endpoint, and sample user agent directly to LanceDB.
+- **`aws_s3_allow_unsafe_rename=true`.** LanceDB commits on S3 normally use a conditional PUT (`If-None-Match`) that **B2 does not support**. This option bypasses it. **Consequence: single-writer only** (see [RELIABILITY.md](../RELIABILITY.md)).
 - **Seed-row create.** Empty-schema `create_table` calls don't persist on S3 backends, so the table is created **with a seed row**, then the row is deleted. `ensure_table_ready()` also opens → `count_rows` → drops-if-broken for recovery.
-- **Custom-UA deviation.** Standard #2's custom user agent is set on the boto3 client (`b2ai-lance-multimodal-search`), but **not** on Lance's internal Rust `object_store` client — LanceDB's public Python API exposes no UA override. Justified, documented deviation.
+- **Custom user agent.** Both the boto3 client and LanceDB object-store client use `lance-multimodal-search (backblaze-b2-samples)`.
 - **kNN search.** `search_vectors(vector, k)` runs `table.search(vector).limit(k)`; the service maps the returned `_distance` to a `0..1` score.
 
 ## Edge Cases

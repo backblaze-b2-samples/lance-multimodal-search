@@ -4,7 +4,7 @@
 > (fresh `vibe-coding-starter-kit` clone). Parent standards: `../CLAUDE.md`.
 > Technical reference for the LanceDB↔B2 mechanism: the sibling
 > `agentic-rag-vector-starter-kit` already proved this exact stack against B2 —
-> we reuse its hard-won B2 quirks (env mapping, unsafe-rename, seed-row create),
+> we reuse its hard-won B2 quirks (storage options, unsafe-rename, seed-row create),
 > but our sample is **fully local / no API key** (CLIP, not OpenAI) and **multimodal**.
 
 ---
@@ -74,9 +74,9 @@ Mechanics:
 
 ## 3. B2 surface (S3 operations)
 
-**All B2 access is via the S3-compatible API — no b2-native API anywhere** (satisfies Standard #1).
+**All B2 access is via the S3-compatible API, not the native B2 API** (satisfies Standard #1).
 
-- **boto3 client** (`repo/b2_client.py`, UA `b2ai-lance-multimodal-search`, `region_name=B2_REGION`):
+- **boto3 client** (`repo/b2_client.py`, UA `lance-multimodal-search (backblaze-b2-samples)`, `region_name=B2_REGION`):
   `put_object` (ingest source files **+ rendered PDF page thumbnails under `derived/pages/`**),
   `list_objects_v2` (corpus listing, full-bucket browse, stats, vector-store byte size under `lancedb/`),
   `get_object` (download source bytes for embedding), `head_object`, `delete_object`,
@@ -84,15 +84,13 @@ Mechanics:
 - **LanceDB object_store** (Lance's internal S3 client, `lancedb/` prefix): GET/PUT/LIST/DELETE +
   multipart for Lance manifest, data fragments, and ANN index files. Also pure S3 API.
 
-**Two flagged B2 specifics** (both proven necessary by the sibling sample; both documented):
-1. **`AWS_S3_ALLOW_UNSAFE_RENAME=true`** — LanceDB commits on S3 normally use conditional PUT
-   (`If-None-Match`), which **B2 does not support**. We map B2 creds into `AWS_*` env vars in
-   `lance_store.py` and set this flag. Consequence: **single-writer only** — concurrent writers
-   to the same table are unsafe. Fine for a single-user demo; documented in `docs/RELIABILITY.md`.
-2. **Custom user agent on the LanceDB client** — the Rust `object_store` backing LanceDB does
-   **not** expose a UA override through LanceDB's public Python API. So Standard #2's "custom UA on
-   every S3 client" is satisfied for the **boto3** client but not for Lance's internal client.
-   **Justified deviation**, documented in `ARCHITECTURE.md`. (The sibling sample accepts the same.)
+**Two flagged B2 specifics**:
+1. **`aws_s3_allow_unsafe_rename=true`** — LanceDB commits on S3 normally use conditional PUT
+   (`If-None-Match`), which **B2 does not support**. Consequence: **single-writer only** —
+   concurrent writers to the same table are unsafe. Fine for a single-user demo; documented in
+   `docs/RELIABILITY.md`.
+2. **Custom user agent on every S3 client** — both boto3 and LanceDB object-store requests use
+   `lance-multimodal-search (backblaze-b2-samples)`.
 
 **Empty-schema tables don't persist on B2** — `lance_store.py` creates the table *with data*
 (seed-row pattern, then deletes the seed) and includes the open→`count_rows`→drop-if-broken
@@ -111,7 +109,7 @@ recovery, exactly as the sibling does, because empty `create_table` calls don't 
 3. **Corpus library** (`corpus-library.md`) — scoped explorer of ingested images & PDFs with per-item
    index status and a one-click "build / refresh index".
 4. **Object-storage-native vector store** (`vector-store.md`) — how the Lance table + ANN index
-   live on B2, the AWS_* env mapping, the unsafe-rename / single-writer caveat, seed-row create.
+   live on B2, the LanceDB storage options, the unsafe-rename / single-writer caveat, seed-row create.
 5. **Corpus ingest (upload)** (`file-upload.md`, adapted) — drag-drop images & PDFs into `corpus/`.
 6. **File browser** (`file-browser.md`, kept) — full-bucket browse/preview/download/delete.
    *(Dashboard `dashboard.md` rewritten to corpus/index metrics — adaptation, counted under §2.)*
@@ -149,7 +147,7 @@ Env renamed to Standard #3 (§6).
   angle, quick start (B2 creds + first-run model download), search & library features, updated commands,
   UTM → `b2ai-lance-multimodal-search`. Remove the "What it looks like" screenshot section (added later by publish).
 - **ARCHITECTURE.md** — add `lance_store` + `embedder` repo modules; LanceDB-on-B2 as a data store;
-  the AWS_* env mapping + unsafe-rename/single-writer note + UA-deviation note; search/index data flows; EMBEDDING_DIM=512.
+  LanceDB storage options + unsafe-rename/single-writer note + custom-UA note; search/index data flows; EMBEDDING_DIM=512.
 - **AGENTS.md** — update repo map + invariants ("`lancedb`/`pyarrow` only in `repo/lance_store.py`;
   `sentence-transformers`/`torch` only in `repo/embedder.py`"), commands.
 - **docs/features/** — KEEP+adapt `file-upload.md`, KEEP `file-browser.md`, KEEP `metadata-extraction.md`;
@@ -175,19 +173,18 @@ Env renamed to Standard #3 (§6).
 | `next.config.ts` `transpilePackages` | `@vibe-coding-starter-kit/shared` | `@lance-multimodal-search/shared` |
 | All `pnpm --filter @vibe-coding-starter-kit/web …` (package.json, README, dev-workflows) | `@vibe-coding-starter-kit/web` | `@lance-multimodal-search/web` |
 | Header brand string (`components/layout/header.tsx`) | `oss-starter-kit` | `lance-multimodal-search` (or "Lance Multimodal Search") |
-| boto3 `user_agent_extra` (`repo/b2_client.py`) | `b2ai-oss-start` | `b2ai-lance-multimodal-search` |
+| boto3 `user_agent_extra` (`repo/b2_client.py`) | `b2ai-oss-start` | `lance-multimodal-search (backblaze-b2-samples)` |
 | UTM `utm_content=` (sidebar, README ×3, doctor.mjs) | `b2ai-oss-start` | `b2ai-lance-multimodal-search` |
-| Env var | `B2_KEY_ID` | `B2_APPLICATION_KEY_ID` (Standard #3) |
-| Env var | `B2_ENDPOINT` (keep name) | `B2_ENDPOINT` |
+| Env var | old key-id name | `B2_APPLICATION_KEY_ID` (Standard #3) |
+| Env var | endpoint value | Derived from `B2_REGION` |
 | Env var | *(none)* | **ADD `B2_REGION`** (Standard #3; LanceDB needs it; boto3 `region_name`) |
 | Settings fields (`config/settings.py`) | `b2_key_id` | `b2_application_key_id`; add `b2_region` |
 | Clone URL in README | `…/vibe-coding-starter-kit.git` | `…/lance-multimodal-search.git` |
 | `docs/SECURITY.md` prose | "vibe-coding-starter-kit" | "lance-multimodal-search" |
 
 **Standard #3 env contract (final):** `B2_APPLICATION_KEY_ID`, `B2_APPLICATION_KEY`,
-`B2_BUCKET_NAME`, `B2_REGION`, `B2_ENDPOINT` (+ optional `B2_PUBLIC_URL`). `.env.example` rewritten
-to match, with fake reference values. (Note: starter uses `B2_KEY_ID`/no region; sibling uses
-`B2_S3_ENDPOINT`/derived region — we follow the parent **Standard #3** names, which is neither verbatim.)
+`B2_BUCKET_NAME`, `B2_REGION`, and optional `B2_PUBLIC_URL_BASE`. `.env.example` rewritten
+to match, with fake reference values.
 
 ---
 

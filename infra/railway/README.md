@@ -24,12 +24,20 @@ Set these on the API service:
 
 | Variable | Value |
 |----------|-------|
-| `B2_ENDPOINT` | Your B2 S3 endpoint (e.g., `https://s3.us-west-004.backblazeb2.com`) |
-| `B2_REGION` | The region segment of the endpoint (e.g., `us-west-004`) — required by LanceDB |
+| `B2_REGION` | Your B2 region (e.g., `us-west-004`); the API derives the S3-compatible endpoint |
 | `B2_APPLICATION_KEY_ID` | Your B2 application key ID |
 | `B2_APPLICATION_KEY` | Your B2 application key |
 | `B2_BUCKET_NAME` | Your bucket name |
+| `B2_PUBLIC_URL_BASE` | Optional public base URL for direct object links |
 | `API_CORS_ORIGINS` | Your web service URL (e.g., `https://web-production-xxx.up.railway.app`) |
+
+Rolling migration note: while deploying this B2 standards change over an older
+API revision, keep `B2_ENDPOINT=https://s3.<B2_REGION>.backblazeb2.com` in the
+production environment until every old instance is drained. New code derives the
+endpoint from `B2_REGION` and tolerates `B2_ENDPOINT` for one release, but old
+instances need the explicit value to avoid falling back to their previous
+default endpoint. `B2_PUBLIC_URL` is also tolerated for one release; use
+`B2_PUBLIC_URL_BASE` for new configuration.
 
 > The CLIP model and `torch` are CPU-only but sizeable; size the API service accordingly. The model downloads once on first use.
 
