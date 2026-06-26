@@ -104,7 +104,7 @@ async def test_image_search_invalid_image_returns_400(client):
 
 
 @pytest.mark.asyncio
-async def test_image_search_oversized_decoded_image_returns_413(
+async def test_image_search_oversized_decoded_image_returns_400(
     client, monkeypatch
 ):
     """Decoded image limits reject compressed inputs before model or vector work."""
@@ -134,15 +134,15 @@ async def test_image_search_oversized_decoded_image_returns_413(
         files={"file": ("large.png", image_data, "image/png")},
     )
 
-    assert response.status_code == 413
+    assert response.status_code == 400
     assert "dimensions" in response.json()["detail"].lower()
 
 
 @pytest.mark.asyncio
-async def test_image_search_decompression_warning_returns_413(
+async def test_image_search_decompression_warning_returns_400(
     client, monkeypatch
 ):
-    """Pillow decompression warnings promoted to errors return bounded 413s."""
+    """Pillow decompression warnings promoted to errors return bounded 400s."""
     from PIL import Image
 
     from app.repo import embedder
@@ -170,5 +170,5 @@ async def test_image_search_decompression_warning_returns_413(
         files={"file": ("warning.png", image_data, "image/png")},
     )
 
-    assert response.status_code == 413
+    assert response.status_code == 400
     assert "dimensions" in response.json()["detail"].lower()

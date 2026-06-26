@@ -87,7 +87,7 @@ def search_image(
     try:
         vector = encode_image(image_bytes)
     except ImageTooLargeError:
-        raise SearchError("Image dimensions too large", status_code=413) from None
+        raise SearchError("Image dimensions too large") from None
     except InvalidImageError:
         raise SearchError("Invalid image upload") from None
     hits = _to_hits(search_vectors(vector, k=top_k or settings.search_top_k))

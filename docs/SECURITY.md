@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Security
 
 Security principles and implementation for lance-multimodal-search.
@@ -27,7 +27,7 @@ Security principles and implementation for lance-multimodal-search.
   conversion or CLIP embedding
 - The decoded-size guard is shared by example-image search, corpus image
   indexing, and rendered PDF page indexing
-- Pillow decompression-bomb warnings/errors are converted into bounded 413
+- Pillow decompression-bomb warnings/errors are converted into bounded 400
   responses
 
 ## Preview Model
