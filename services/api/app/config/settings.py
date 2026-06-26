@@ -1,4 +1,9 @@
+import re
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+_B2_REGION_RE = re.compile(r"^[a-z]{2}(?:-[a-z]+)+-\d{3}$")
 
 
 class Settings(BaseSettings):
@@ -45,7 +50,22 @@ class Settings(BaseSettings):
     # Durable query log for the dashboard recent-searches table.
     query_log_file: str = "data/search_log.json"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
+
+    @field_validator("b2_region")
+    @classmethod
+    def validate_b2_region(cls, value: str) -> str:
+        if not value:
+            return value
+        if not _B2_REGION_RE.fullmatch(value):
+            raise ValueError(
+                "B2_REGION must be a Backblaze region like us-west-004"
+            )
+        return value
 
     @property
     def cors_origins(self) -> list[str]:

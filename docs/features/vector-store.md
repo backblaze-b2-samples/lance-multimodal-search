@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Feature: Object-Storage-Native Vector Store
 
 ## Purpose

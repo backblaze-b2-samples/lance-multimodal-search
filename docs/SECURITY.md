@@ -1,4 +1,4 @@
-<!-- last_verified: 2026-06-11 -->
+<!-- last_verified: 2026-06-26 -->
 # Security
 
 Security principles and implementation for lance-multimodal-search.

@@ -1,14 +1,62 @@
 """Tests for mandatory Backblaze B2 integration standards."""
 
+import pytest
+from pydantic import ValidationError
+
 from app.config.settings import Settings
 from app.repo import b2_client, lance_store
 from app.repo.b2_standards import B2_USER_AGENT
 
+VALID_REGION = "aa-test-001"
+
 
 def test_endpoint_is_derived_from_region():
-    settings = Settings(_env_file=None, b2_region="sample-region-001")
+    settings = Settings(_env_file=None, b2_region=VALID_REGION)
 
-    assert settings.b2_endpoint == "https://s3.sample-region-001.backblazeb2.com"
+    assert settings.b2_endpoint == f"https://s3.{VALID_REGION}.backblazeb2.com"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        f"{VALID_REGION}/evil",
+        f"{VALID_REGION}:443",
+        f"user@{VALID_REGION}",
+        f"{VALID_REGION}?bucket=evil",
+        f"{VALID_REGION}#fragment",
+        "aa test 001",
+        f"{VALID_REGION}\nother",
+        f"{VALID_REGION}\t",
+    ],
+)
+def test_unsafe_region_payloads_fail_settings_validation(payload):
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, b2_region=payload)
+
+
+def test_legacy_b2_dotenv_keys_do_not_block_settings(tmp_path):
+    legacy_endpoint_key = "B2_" + "ENDPOINT"
+    legacy_public_url_key = "B2_" + "PUBLIC_URL"
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"{legacy_endpoint_key}=https://s3.{VALID_REGION}.backblazeb2.com",
+                f"{legacy_public_url_key}=https://legacy.example.com",
+                f"B2_REGION={VALID_REGION}",
+                "B2_APPLICATION_KEY_ID=sample-key-id",
+                "B2_APPLICATION_KEY=sample-key",
+                "B2_BUCKET_NAME=sample-bucket",
+                "B2_PUBLIC_URL_BASE=https://public.example.com",
+            ]
+        )
+    )
+
+    settings = Settings(_env_file=env_file)
+
+    assert settings.b2_region == VALID_REGION
+    assert settings.b2_endpoint == f"https://s3.{VALID_REGION}.backblazeb2.com"
+    assert settings.b2_public_url_base == "https://public.example.com"
 
 
 def test_boto3_client_uses_standard_user_agent(monkeypatch):
@@ -19,7 +67,7 @@ def test_boto3_client_uses_standard_user_agent(monkeypatch):
         captured["kwargs"] = kwargs
         return object()
 
-    monkeypatch.setattr(b2_client.settings, "b2_region", "sample-region-001")
+    monkeypatch.setattr(b2_client.settings, "b2_region", VALID_REGION)
     monkeypatch.setattr(
         b2_client.settings,
         "b2_application_key_id",
@@ -36,26 +84,44 @@ def test_boto3_client_uses_standard_user_agent(monkeypatch):
 
     assert captured["args"] == ("s3",)
     assert captured["kwargs"]["endpoint_url"] == (
-        "https://s3.sample-region-001.backblazeb2.com"
+        f"https://s3.{VALID_REGION}.backblazeb2.com"
     )
-    assert captured["kwargs"]["region_name"] == "sample-region-001"
+    assert captured["kwargs"]["region_name"] == VALID_REGION
     assert captured["kwargs"]["config"].user_agent_extra == B2_USER_AGENT
 
 
 def test_lancedb_storage_options_use_b2_standard_names(monkeypatch):
-    monkeypatch.setattr(lance_store.settings, "b2_region", "sample-region-001")
+    captured = {}
+
+    class FakeDb:
+        def table_names(self):
+            return []
+
+    def fake_connect(uri, *, storage_options):
+        captured["uri"] = uri
+        captured["storage_options"] = storage_options
+        return FakeDb()
+
+    monkeypatch.setattr(lance_store.settings, "b2_region", VALID_REGION)
+    monkeypatch.setattr(lance_store.settings, "b2_bucket_name", "sample-bucket")
     monkeypatch.setattr(
         lance_store.settings,
         "b2_application_key_id",
         "sample-key-id",
     )
     monkeypatch.setattr(lance_store.settings, "b2_application_key", "sample-key")
+    monkeypatch.setattr(lance_store.lancedb, "connect", fake_connect)
+    lance_store.get_db.cache_clear()
 
-    options = lance_store._lancedb_storage_options()
+    try:
+        lance_store.get_db()
+    finally:
+        lance_store.get_db.cache_clear()
 
-    assert options == {
-        "region": "sample-region-001",
-        "endpoint": "https://s3.sample-region-001.backblazeb2.com",
+    assert captured["uri"] == "s3://sample-bucket/lancedb/"
+    assert captured["storage_options"] == {
+        "region": VALID_REGION,
+        "endpoint": f"https://s3.{VALID_REGION}.backblazeb2.com",
         "user_agent": B2_USER_AGENT,
         "aws_s3_allow_unsafe_rename": "true",
         "aws_access_key_id": "sample-key-id",
